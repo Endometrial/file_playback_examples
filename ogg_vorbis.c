@@ -10,23 +10,23 @@
 
 // Remainder struct for readability
 typedef struct {
-	long frames;
-	int16_t* buffer;
+	long		frames;
+	int16_t*	buffer;
 } PcmRemainder;
 
 // Contains all data required to decode an ogg/vorbis file
 typedef struct {
-	FILE* 				filepointer;
-	ogg_stream_state 	stream_state;
-	ogg_sync_state 		sync_state;
-	ogg_packet 			packet;
-	ogg_page 			page;
-	vorbis_block 		block;
-	vorbis_comment 		comments;
-	vorbis_info 		info;
-	vorbis_dsp_state 	state;
-	PcmRemainder		remainder;
-	int 				eos;
+	FILE* 		filepointer;
+	ogg_stream_state stream_state;
+	ogg_sync_state 	sync_state;
+	ogg_packet 	packet;
+	ogg_page 	page;
+	vorbis_block 	block;
+	vorbis_comment 	comments;
+	vorbis_info 	info;
+	vorbis_dsp_state state;
+	PcmRemainder	remainder;
+	int 		eos;
 }	OggDecoder;
 
 OggDecoder ogg_decoder_open(char* filepath);
