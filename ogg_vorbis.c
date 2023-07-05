@@ -53,15 +53,12 @@ int main(int argc, char* argv[]) {
 	err = Pa_Initialize();
 	if (err != paNoError) goto error;
 
-	// Verify that we have all arguments from the user
+	// Verify that we have all arguments from the user & give an error if otherwise
 	if ((argc < 2) || (argc == 3)) {
 		fprintf(stderr, "%s: please input all arguments!\n\t%s [char* filepath] [int input device(optional)] [int output device(optional)]\n",argv[0],argv[0]);
 		audio_list_devices();
 		exit(-1);
 	}
-
-	// List audio devices
-	audio_list_devices();
 
 	// Populate argument data types
 	filepath = argv[1];
@@ -73,6 +70,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Initialize devices
+	fprintf(stderr, "Initializing audio device data types\n");
 	input.device =  (int)in;
 	const PaDeviceInfo* input_info = Pa_GetDeviceInfo(input.device);
 	input.channelCount = input_info->maxInputChannels;
@@ -86,42 +84,46 @@ int main(int argc, char* argv[]) {
 	output.sampleFormat = paInt16;
 	output.suggestedLatency = output_info->defaultHighOutputLatency;
 	output.hostApiSpecificStreamInfo = NULL;
-
-	// Print out current devices
-	fprintf(stderr, "Input [%i]\n", input.device);
-	fprintf(stderr, "Output [%i]\n", output.device);
 	
 	// Check that the file is vorbis
-	char vorb = (ogg_decoder_is_vorbis(filepath)) ? 'y' : 'n';
-	fprintf(stderr, "Is vorbis? : [%c]\n", vorb);
+	(ogg_decoder_is_vorbis(filepath)) ? 1 : fprintf(stderr, "File is not vorbis!\n");
+
+	// Print out current devices
+	fprintf(stderr, "Selected devices -> input [%i] output [%i]\n", input.device, output.device);
 
 	// Open ogg decoder
+	fprintf(stderr, "Opening ogg/vorbis decoder\n");
 	decoder = ogg_decoder_open(filepath);
 
 	// Play the audio file
 	int rate = ogg_decoder_get_rate(&decoder);
 	int channels = ogg_decoder_get_channels(&decoder);
 
+	fprintf(stderr, "Opening stream\n");
 	err = Pa_OpenStream(&stream, &input, &output, rate, 4096, paNoFlag, &ogg_decoder_callback_i16, &decoder);
 	if (err != paNoError) goto error;
 
+	fprintf(stderr, "Playing stream\n");
 	err = Pa_StartStream(stream);
 	if (err != paNoError) goto error;
 
 	// Loop untill eos
+	fprintf(stderr, "Looping untill EOS is reached\n");
 	while (!ogg_decoder_eos(&decoder)) {}
 
+	fprintf(stderr, "Stopping stream\n");
 	err = Pa_StopStream(stream);
 	if (err != paNoError) goto error;
 
+	fprintf(stderr, "Closing stream\n");
 	err = Pa_CloseStream(stream);
 	if (err != paNoError) goto error;
 		
 	// Cleanup and return
-	fprintf(stderr,"EOS!\n");
+	fprintf(stderr,"Closing ogg/vorbis decoder\n");
 	Pa_Terminate();
 	ogg_decoder_close(&decoder);
-	fprintf(stderr,"Done\n");
+	fprintf(stderr,"Exiting program\n");
 	return 0;
 
 	// Label for errors with portaudio
