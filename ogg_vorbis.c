@@ -37,6 +37,7 @@ int ogg_decoder_eos(OggDecoder* decoder);
 int ogg_decoder_is_vorbis(char* filepath);
 int ogg_decoder_get_rate(OggDecoder* decoder);
 static int ogg_decoder_callback_i16(const void *inputBuffer, void *outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+void audio_list_devices();
 
 int main(int argc, char* argv[]) {
 	OggDecoder decoder;
@@ -48,24 +49,19 @@ int main(int argc, char* argv[]) {
 	int16_t* buffer;
 	int in, out;
 
-	// Verify that we have all arguments from the user
-	if ((argc < 2) || (argc == 3)) {
-		fprintf(stderr, "%s: please input all arguments!\n\t%s [char* filepath] [int input device(optional)] [int output device(optional)]\n",argv[0],argv[0]);
-		exit(-1);
-	}
-
 	// Initialize portaudio
 	err = Pa_Initialize();
 	if (err != paNoError) goto error;
 
-	// Print available devices
-	int num_devices = Pa_GetDeviceCount();
-	const PaDeviceInfo* device_info;
-	for (int i=0; i<num_devices; i++) {
-		device_info = Pa_GetDeviceInfo(i);
-		fprintf(stderr, "Device [%i] %s\n",i, device_info->name);
-		fprintf(stderr, "	in: %i out: %i\n",device_info->maxInputChannels, device_info->maxOutputChannels);
+	// Verify that we have all arguments from the user
+	if ((argc < 2) || (argc == 3)) {
+		fprintf(stderr, "%s: please input all arguments!\n\t%s [char* filepath] [int input device(optional)] [int output device(optional)]\n",argv[0],argv[0]);
+		audio_list_devices();
+		exit(-1);
 	}
+
+	// List audio devices
+	audio_list_devices();
 
 	// Populate argument data types
 	filepath = argv[1];
@@ -304,6 +300,9 @@ int ogg_decoder_get_pcm_i16(OggDecoder* decoder, int16_t** buffer, int frames) {
 	channels = (int)decoder->info.channels;
 	sample_data = (float)pow(2, bits) / 2.0f;
 
+	// Reallocate the remainder as needed (aka everytime)
+	decoder->remainder.buffer = realloc(decoder->remainder.buffer, MAX_OGG_SAMPLE_FRAMES * sizeof(int16_t) * channels);
+
 	// Read in remainder (if it exists)
 	if (decoder->remainder.frames > 0) {
 		int16_t* bptr = (*buffer);						// Buffer
@@ -426,4 +425,15 @@ int ogg_decoder_get_channels(OggDecoder* decoder) {
 // Get rate of file
 int ogg_decoder_get_rate(OggDecoder* decoder) {
 	return decoder->info.rate;
+}
+
+// Print available devices
+void audio_list_devices() {
+	int num_devices = Pa_GetDeviceCount();
+	const PaDeviceInfo* device_info;
+	for (int i=0; i<num_devices; i++) {
+		device_info = Pa_GetDeviceInfo(i);
+		fprintf(stderr, "Device [%i] %s\n",i, device_info->name);
+		fprintf(stderr, "	in: %i out: %i\n",device_info->maxInputChannels, device_info->maxOutputChannels);
+	}
 }
