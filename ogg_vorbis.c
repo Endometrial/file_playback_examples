@@ -99,8 +99,6 @@ int main(int argc, char* argv[]) {
 	int rate = ogg_decoder_get_rate(&decoder);
 	int channels = ogg_decoder_get_channels(&decoder);
 
-	//rewind(decoder.filepointer);
-
 	fprintf(stderr, "Opening stream\n");
 	err = Pa_OpenStream(&stream, &input, &output, rate, 8192, paNoFlag, &ogg_decoder_callback_i16, &decoder);
 	if (err != paNoError) goto error;
@@ -127,7 +125,6 @@ int main(int argc, char* argv[]) {
 	Pa_Terminate();
 	ogg_decoder_close(&decoder);
 	fprintf(stderr,"Exiting program\n");
-	fprintf(stderr, "Rate is = %i\n", rate);
 	return 0;
 
 	// Label for errors with portaudio
